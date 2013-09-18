@@ -7,8 +7,8 @@ angular.module('MyApp', ['racer.js']).
         templateUrl: 'partials/todo.htm',
         controller: TodoCtrl,
         resolve: {
-          racerModel: function (liveResource) {
-            return liveResource.initializing;
+          liveResource: function (liveResourceProvider) {
+            return liveResourceProvider.createLiveResource;
           }
         }
       })
@@ -20,12 +20,12 @@ function TodoCtrl($scope, liveResource) {
 
   window.debugScope = $scope;
 
-  var foo = liveResource.path('entries');
-  var allTemplatesQuery = liveResource.query({});
-  $scope.entries = liveResource.subscribe(allTemplatesQuery);
+  var entriesLive = liveResource('entries');
+  var allTemplatesQuery = entriesLive.query({});
+  $scope.entries = entriesLive.subscribe(allTemplatesQuery);
 
   $scope.add = function() {
-    liveResource.add('entries', { text: $scope.newInput, done: false });
+    entriesLive.add({ text: $scope.newInput, done: false });
   }
 }
 

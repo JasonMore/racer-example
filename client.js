@@ -1,69 +1,135 @@
 var racerModule = angular.module('racer.js', []);
 
-racerModule.service('liveResource', function ($q, $http, $timeout, $rootScope) {
-  var self = this;
+racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
+//  var self = this;
   var racer = require('racer');
-  var noop = function racerNotYetReady() {
-    console.error('racer not ready');
-  };
+//  var noop = function racerNotYetReady() {
+//    console.error('racer not ready');
+//  };
 
   // init
   var initDefer = $q.defer();
-  this.initializing = initDefer.promise;
+  this.createLiveResource = initDefer.promise;
 
   $http.get('/model').success(function (data) {
     racer.init(data);
   });
 
-  function bind(fn, newThis){
-    return function() { return fn.apply(newThis, arguments)};
+  function bind(fn, newThis) {
+    return function () {
+      return fn.apply(newThis, arguments)
+    };
   }
 
-  this._path = '';
-  this.scoped;
+//  this._path = '';
+//  this.scoped;
+
+  $rootScope.safeApply = function (fn) {
+    var phase = this.$root.$$phase;
+    if (phase == '$apply' || phase == '$digest') {
+      if (fn && (typeof(fn) === 'function')) {
+        fn();
+      }
+    } else {
+      this.$apply(fn);
+    }
+  };
 
   racer.ready(function (model) {
-    self._model = model;
+//    self._model = model;
 //    self.query = bind(model.query, model);
 //    self.push = bind(model.push, model);
-    self.add = bind(model.add, model);
+//    self.add = bind(model.add, model);
 
-    var returnValue = [];
+//    var returnValue = [];
 
-    self.query = function(queryParams) {
-      return model.query(self._path, queryParams);
-    }
+//    self.query = function(queryParams) {
+//      return model.query(self._path, queryParams);
+//    }
 
-    self.subscribe = function extendSubscribe(query) {
+//    self.subscribe = function extendSubscribe(query) {
+//
+//      model.subscribe(query, function () {
+//        self.scoped = query.ref('_page.foo');
+//
+//        angular.extend(returnValue, self.scoped.get());
+//        $rootScope.$digest();
+//      });
+//
+//      return returnValue;
+//    }
+//
+//    model.on('insert', self._path + '**', function(a,b,c,d){
+//      angular.extend(returnValue, self.scoped.get());
+//      $rootScope.$digest();
+//    });
 
-      model.subscribe(query, function () {
-        self.scoped = query.ref('_page.foo');
+    // currently singleton, refactor to factory
+    var returnService = function liveResource(path) {
+      var self = this;
 
-        angular.extend(returnValue, self.scoped.get());
-        $rootScope.$digest();
+      this.path = path;
+      this._model = model;
+      this.scoped;
+
+      var liveData = [];
+
+      // racer functions
+//      this.add = bind(model.add, model);
+
+      this.add = function (value) {
+        return model.add(self.path, value);
+      };
+
+      this.query = function (queryParams) {
+        return model.query(self.path, queryParams);
+      };
+
+      this.subscribe = function (query) {
+
+        model.subscribe(query, function () {
+          self.scoped = query.ref('_page.' + self.path);
+//
+//          self.scoped.on('all','**', function(){
+//            console.log(arguments);
+//          })
+
+          angular.extend(liveData, self.scoped.get());
+          $rootScope.$digest();
+        });
+
+        return liveData;
+      };
+
+
+      model.on('all', self.path + '**', function (a, b, c, d) {
+        console.log(arguments);
+//        angular.extend(liveData, self.scoped.get());
+//        $rootScope.$digest();
+//        $rootScope.safeApply(function () {
+//          angular.extend(liveData, self.scoped.get());
+//        })
+
       });
 
-      return returnValue;
-    }
 
-    model.on('insert', self._path + '**', function(a,b,c,d){
-      angular.extend(returnValue, self.scoped.get());
-      $rootScope.$digest();
-    });
+    };
 
-    $timeout(function() {
-      initDefer.resolve(model);
+
+    $timeout(function () {
+      initDefer.resolve(function (path) {
+        return new returnService(path);
+      });
     });
   });
 
-  self.path = function(path){
-    self._path = path;
-  }
+//  self.path = function(path){
+//    self._path = path;
+//  }
   // properties
-  this._racer = racer;
-  this.query = noop;
-  this.subscribe = noop;
-
+//  this._racer = racer;
+//  this.query = noop;
+//  this.subscribe = noop;
 });
 
 //angular.module('racer.js', [], ['$provide', function ($provide) {
