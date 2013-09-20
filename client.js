@@ -1,7 +1,7 @@
 var racerModule = angular.module('racer.js', []);
 
 racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
-//  var self = this;
+  var self = this;
   var racer = require('racer');
 //  var noop = function racerNotYetReady() {
 //    console.error('racer not ready');
@@ -39,7 +39,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
 //    self._model = model;
 //    self.query = bind(model.query, model);
 //    self.push = bind(model.push, model);
-//    self.add = bind(model.add, model);
+    self.add = bind(model.add, model);
 
 //    var returnValue = [];
 
@@ -59,10 +59,11 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
 //      return returnValue;
 //    }
 //
-//    model.on('insert', self._path + '**', function(a,b,c,d){
+    model.on('insert', 'entries' + '**', function(a,b,c,d){
+      console.log('this one works');
 //      angular.extend(returnValue, self.scoped.get());
 //      $rootScope.$digest();
-//    });
+    });
 
     // currently singleton, refactor to factory
     var returnService = function liveResource(path) {
@@ -102,7 +103,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       };
 
 
-      model.on('all', self.path + '**', function (a, b, c, d) {
+      model.on('insert', self.path + '**', function (a, b, c, d) {
         console.log(arguments);
 //        angular.extend(liveData, self.scoped.get());
 //        $rootScope.$digest();

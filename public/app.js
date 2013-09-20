@@ -16,7 +16,7 @@ angular.module('MyApp', ['racer.js']).
   }]);
 
 
-function TodoCtrl($scope, liveResource) {
+function TodoCtrl($scope, liveResource, liveResourceProvider) {
 
   window.debugScope = $scope;
 
@@ -25,7 +25,8 @@ function TodoCtrl($scope, liveResource) {
   $scope.entries = entriesLive.subscribe(allTemplatesQuery);
 
   $scope.add = function() {
-    entriesLive.add({ text: $scope.newInput, done: false });
+//    entriesLive.add({ text: $scope.newInput, done: false });
+    liveResourceProvider.add('entries', { text: $scope.newInput, done: false });
   }
 }
 
