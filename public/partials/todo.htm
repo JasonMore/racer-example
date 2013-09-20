@@ -2,8 +2,8 @@
 
 <ul>
   <li data-ng-repeat="entry in entries">
-    <input type="checkbox" data-ng-model="entry.done" data-ng-change="save(entry)">
-    {{entry.text}}
+    <input type="checkbox" ng-model="entry.done">
+    <input type="text" ng-model="entry.text">
   </li>
 </ul>
 
@@ -12,7 +12,7 @@ Add new entry:
   <dl>
     <dt>Text:</dt>
     <dd>
-      <input data-ng-model="newInput" type="text"></dd>
+      <input ng-model="newInput" type="text"></dd>
     <dd>
       <input type="submit"></dd>
   </dl>

@@ -49,6 +49,7 @@ app.get('/model', function (req, res) {
 	});
 });
 
+
 store.bundle(__dirname + '/client.js', function (err, js) {
 	app.get('/script.js', function (req, res) {
 		res.type('js');

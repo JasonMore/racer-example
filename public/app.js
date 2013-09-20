@@ -28,27 +28,3 @@ function TodoCtrl($scope, liveResource, liveResourceProvider) {
     entriesLive.add({ text: $scope.newInput, done: false });
   }
 }
-
-
-//function TodoCtrl($scope, model) {
-//	$scope.entries = model.get('entries');
-//
-//	$scope.add = function () {
-//		model.add('entries', { text: $scope.newInput, done: false });
-//	};
-//
-//	$scope.save = function (entry) {
-//		model.set('entries.' + entry.id + '.done', entry.done);
-//		return false;
-//	};
-//}`
-//
-//TodoCtrl.resolve = {
-//	model: function (racer) {
-//		return racer;
-//	}
-//};
-//
-//TodoCtrl.resolve.model.$inject = ['racer'];
-//
-//TodoCtrl.$inject = ['$scope', 'model'];

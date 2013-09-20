@@ -53,13 +53,16 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       if (!paths[path]) {
         paths[path] = oldGet.call(model, path);
 
-        model.on('all', path ? path + '**' : '**', function () {
-//          console.log("model.on('all', path ? path + '**' : '**', function () {");
+        model.on('all', path ? path + '**' : '**', function (segments, type, newVal, oldVal, passed) {
 
+          // skip local updated calls, for now...
+          if(!passed.$remote) return;
+
+          console.log('recloning data', arguments);
 
           // clone data since angular would set $ properties in the racer object otherwise
-          var newData = angular.copy(oldGet.call(model, path), undefined);
-          paths[path] = angular.copy(newData, paths[path]);
+          var newData = angular.extend(oldGet.call(model, path), undefined);
+          paths[path] = angular.extend(newData, paths[path]);
           setImmediate($rootScope.$apply.bind($rootScope));
         });
       }
@@ -103,36 +106,38 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
 
           $rootScope._page[self.path] = liveData;
 
-$rootScope.$watch('_page.' + self.path, function (newEntries, oldEntries) {
-  if (newEntries === oldEntries) return;
+          $rootScope.$watch('_page.' + self.path, function (newEntries, oldEntries) {
+            if (newEntries === oldEntries) return;
 
-  // remove $$ from objects
-  newEntries = angular.copy(newEntries);
-  oldEntries = angular.copy(oldEntries);
+            // remove $$ from objects
+            newEntries = angular.copy(newEntries);
+            oldEntries = angular.copy(oldEntries);
 
-//  console.log(newEntries);
+            for (var entry in newEntries) {
 
-  for (var entry in newEntries) {
+              if (entry === "undefined") {
+                break;
+              }
 
-    if (entry === "undefined") {
-      break;
-    }
+              var newEntry = newEntries[entry];
+              var oldEntry = oldEntries[entry];
 
-    var newEntry = newEntries[entry];
-    var oldEntry = oldEntries[entry];
+              var newEntryJson = JSON.stringify(newEntry);
+              var oldEntryJson = JSON.stringify(oldEntry);
 
-    var newEntryJson = JSON.stringify(newEntry);
-    var oldEntryJson = JSON.stringify(oldEntry);
+              if(!oldEntryJson || newEntryJson === oldEntryJson) {
 
-    if (oldEntryJson && newEntryJson !== oldEntryJson) {
-      for(var prop in newEntry) {
-        if(oldEntry[prop] !== newEntry[prop]){
-          model.set(self.path + '.' + newEntries[entry].id + '.' + prop, newEntry[prop]);
-        }
-      }
-    }
-  }
-}, true);
+              }
+
+              if (oldEntryJson && newEntryJson !== oldEntryJson) {
+                for (var prop in newEntry) {
+                  if (oldEntry[prop] !== newEntry[prop]) {
+                    model.set(self.path + '.' + newEntries[entry].id + '.' + prop, newEntry[prop]);
+                  }
+                }
+              }
+            }
+          }, true);
 
           angular.extend(liveData, model.get(self.path));
           $rootScope.$digest();
