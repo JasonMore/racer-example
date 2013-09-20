@@ -36,34 +36,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
   };
 
   racer.ready(function (model) {
-//    self._model = model;
-//    self.query = bind(model.query, model);
-//    self.push = bind(model.push, model);
-    self.add = bind(model.add, model);
 
-//    var returnValue = [];
-
-//    self.query = function(queryParams) {
-//      return model.query(self._path, queryParams);
-//    }
-
-//    self.subscribe = function extendSubscribe(query) {
-//
-//      model.subscribe(query, function () {
-//        self.scoped = query.ref('_page.foo');
-//
-//        angular.extend(returnValue, self.scoped.get());
-//        $rootScope.$digest();
-//      });
-//
-//      return returnValue;
-//    }
-//
-    model.on('insert', 'entries' + '**', function(a,b,c,d){
-      console.log('this one works');
-//      angular.extend(returnValue, self.scoped.get());
-//      $rootScope.$digest();
-    });
 
     // currently singleton, refactor to factory
     var returnService = function liveResource(path) {
@@ -76,8 +49,6 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       var liveData = [];
 
       // racer functions
-//      this.add = bind(model.add, model);
-
       this.add = function (value) {
         return model.add(self.path, value);
       };
@@ -89,11 +60,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       this.subscribe = function (query) {
 
         model.subscribe(query, function () {
-          self.scoped = query.ref('_page.' + self.path);
-//
-//          self.scoped.on('all','**', function(){
-//            console.log(arguments);
-//          })
+          self.scoped = query.ref('_page._' + self.path);
 
           angular.extend(liveData, self.scoped.get());
           $rootScope.$digest();
@@ -102,20 +69,13 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
         return liveData;
       };
 
-
-      model.on('insert', self.path + '**', function (a, b, c, d) {
-        console.log(arguments);
-//        angular.extend(liveData, self.scoped.get());
-//        $rootScope.$digest();
-//        $rootScope.safeApply(function () {
-//          angular.extend(liveData, self.scoped.get());
-//        })
-
+      // external model updates
+      model.on('insert', '_page._' + self.path +'**', function(){
+        angular.extend(liveData, self.scoped.get());
+        $rootScope.$digest();
       });
 
-
     };
-
 
     $timeout(function () {
       initDefer.resolve(function (path) {
@@ -124,13 +84,6 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
     });
   });
 
-//  self.path = function(path){
-//    self._path = path;
-//  }
-  // properties
-//  this._racer = racer;
-//  this.query = noop;
-//  this.subscribe = noop;
 });
 
 //angular.module('racer.js', [], ['$provide', function ($provide) {

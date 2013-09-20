@@ -25,8 +25,7 @@ function TodoCtrl($scope, liveResource, liveResourceProvider) {
   $scope.entries = entriesLive.subscribe(allTemplatesQuery);
 
   $scope.add = function() {
-//    entriesLive.add({ text: $scope.newInput, done: false });
-    liveResourceProvider.add('entries', { text: $scope.newInput, done: false });
+    entriesLive.add({ text: $scope.newInput, done: false });
   }
 }
 
