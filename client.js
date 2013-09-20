@@ -38,18 +38,53 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
   racer.ready(function (model) {
 
 
+    // override original get
+
+    var setImmediate = window && window.setImmediate ? window.setImmediate : function (fn) {
+      setTimeout(fn, 0);
+    };
+
+    var paths = {};
+
+    window.debugPaths = paths;
+
+    var oldGet = model.get;
+    model.get = function (path) {
+      if (!paths[path]) {
+        paths[path] = oldGet.call(model, path);
+
+        model.on('all', path ? path + '**' : '**', function () {
+//          console.log("model.on('all', path ? path + '**' : '**', function () {");
+
+
+          // clone data since angular would set $ properties in the racer object otherwise
+          var newData = angular.copy(oldGet.call(model, path), undefined);
+          paths[path] = angular.copy(newData, paths[path]);
+          setImmediate($rootScope.$apply.bind($rootScope));
+        });
+      }
+
+      return paths[path];
+    };
+
+
+    window.debugModel = model;
+
     // currently singleton, refactor to factory
     var returnService = function liveResource(path) {
+
+
       var self = this;
 
       this.path = path;
       this._model = model;
       this.scoped;
 
-      var liveData = [];
+      var liveData = {};
 
       // racer functions
       this.add = function (value) {
+        value = angular.copy(value);
         return model.add(self.path, value);
       };
 
@@ -62,7 +97,44 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
         model.subscribe(query, function () {
           self.scoped = query.ref('_page._' + self.path);
 
-          angular.extend(liveData, self.scoped.get());
+          if (!$rootScope._page) {
+            $rootScope._page = {};
+          }
+
+          $rootScope._page[self.path] = liveData;
+
+$rootScope.$watch('_page.' + self.path, function (newEntries, oldEntries) {
+  if (newEntries === oldEntries) return;
+
+  // remove $$ from objects
+  newEntries = angular.copy(newEntries);
+  oldEntries = angular.copy(oldEntries);
+
+//  console.log(newEntries);
+
+  for (var entry in newEntries) {
+
+    if (entry === "undefined") {
+      break;
+    }
+
+    var newEntry = newEntries[entry];
+    var oldEntry = oldEntries[entry];
+
+    var newEntryJson = JSON.stringify(newEntry);
+    var oldEntryJson = JSON.stringify(oldEntry);
+
+    if (oldEntryJson && newEntryJson !== oldEntryJson) {
+      for(var prop in newEntry) {
+        if(oldEntry[prop] !== newEntry[prop]){
+          model.set(self.path + '.' + newEntries[entry].id + '.' + prop, newEntry[prop]);
+        }
+      }
+    }
+  }
+}, true);
+
+          angular.extend(liveData, model.get(self.path));
           $rootScope.$digest();
         });
 
@@ -70,10 +142,17 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       };
 
       // external model updates
-      model.on('insert', '_page._' + self.path +'**', function(){
-        angular.extend(liveData, self.scoped.get());
+      model.on('insert', '_page._' + self.path + '**', function () {
+        angular.extend(liveData, model.get(self.path));
         $rootScope.$digest();
       });
+
+      model.on('change', '_page._' + self.path + '**', function () {
+
+//        console.log("model.on('change', '_page._' + self.path + '**', function () {");
+
+      });
+
 
     };
 
