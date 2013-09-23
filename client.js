@@ -54,15 +54,28 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
         paths[path] = oldGet.call(model, path);
 
         model.on('all', path ? path + '**' : '**', function (segments, type, newVal, oldVal, passed) {
-
-          // skip local updated calls, for now...
-          if(!passed.$remote) return;
-
           console.log('recloning data', arguments);
 
           // clone data since angular would set $ properties in the racer object otherwise
-          var newData = angular.extend(oldGet.call(model, path), undefined);
+//          var newData = angular.extend(oldGet.call(model, path), undefined);
+//          paths[path] = angular.extend(newData, paths[path]);
+
+//          paths[path] = newData;
+
+
+          var newData = oldGet.call(model, path);
+
+
+          var keysRemoved = _.difference(_.keys(paths[path]), _.keys(newData));
+
+          _.each(keysRemoved, function(key){
+            delete paths[path][key];
+          });
+
+
           paths[path] = angular.extend(newData, paths[path]);
+
+
           setImmediate($rootScope.$apply.bind($rootScope));
         });
       }
@@ -93,6 +106,10 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
 
       this.query = function (queryParams) {
         return model.query(self.path, queryParams);
+      };
+
+      this.delete = function(obj){
+        return model.del(self.path + "." + obj.id);
       };
 
       this.subscribe = function (query) {

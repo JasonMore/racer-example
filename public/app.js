@@ -27,4 +27,8 @@ function TodoCtrl($scope, liveResource, liveResourceProvider) {
   $scope.add = function() {
     entriesLive.add({ text: $scope.newInput, done: false });
   }
+
+  $scope.delete = function(entry){
+    entriesLive.delete(entry);
+  }
 }

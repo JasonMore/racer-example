@@ -4,6 +4,7 @@
   <li data-ng-repeat="entry in entries">
     <input type="checkbox" ng-model="entry.done">
     <input type="text" ng-model="entry.text">
+    <button ng-click="delete(entry)">delete</button>
   </li>
 </ul>
 
