@@ -1,13 +1,15 @@
 var racerModule = angular.module('racer.js', []);
 
 racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
+  var pageScope = $rootScope.$new();
+
   var racer = require('racer');
 
   // init
   var initDefer = $q.defer();
   this.createLiveResource = initDefer.promise;
 
-  $http.get('/model').success(function (data) {
+  $http.get('/racerInit').success(function (data) {
     racer.init(data);
   });
 
@@ -35,45 +37,11 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       };
 
       this.subscribe = function (query) {
-
         model.subscribe(query, function () {
           // not sure why I have to do this
           query.ref('_page._' + path);
 
-          if (!$rootScope._page) {
-            $rootScope._page = {};
-          }
-
-          $rootScope._page[path] = liveData;
-
-          $rootScope.$watch('_page.' + path, function (newEntries, oldEntries) {
-            if (newEntries === oldEntries) return;
-
-            // remove $$ from objects
-            newEntries = angular.copy(newEntries);
-            oldEntries = angular.copy(oldEntries);
-
-            for (var entry in newEntries) {
-
-              if (entry === "undefined") {
-                break;
-              }
-
-              var newEntry = newEntries[entry];
-              var oldEntry = oldEntries[entry];
-
-              var newEntryJson = JSON.stringify(newEntry);
-              var oldEntryJson = JSON.stringify(oldEntry);
-
-              if (oldEntryJson && newEntryJson !== oldEntryJson) {
-                for (var prop in newEntry) {
-                  if (oldEntry[prop] !== newEntry[prop]) {
-                    model.set(path + '.' + newEntries[entry].id + '.' + prop, newEntry[prop]);
-                  }
-                }
-              }
-            }
-          }, true);
+          pageScope[path] = liveData;
 
           $timeout(function() {
             angular.extend(liveData, model.get(path));
@@ -83,8 +51,39 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
         return liveData;
       };
 
-      // external model updates
+      // when local modifications are made, update the server model
+      pageScope.$watch(path, function (newEntries, oldEntries) {
+        if (!oldEntries || newEntries === oldEntries) return;
+
+        // remove $$ from objects
+        newEntries = angular.copy(newEntries);
+        oldEntries = angular.copy(oldEntries);
+
+        for (var entry in newEntries) {
+
+          if (entry === "undefined") {
+            break;
+          }
+
+          var newEntry = newEntries[entry];
+          var oldEntry = oldEntries[entry];
+
+          var newEntryJson = JSON.stringify(newEntry);
+          var oldEntryJson = JSON.stringify(oldEntry);
+
+          if (oldEntryJson && newEntryJson !== oldEntryJson) {
+            for (var property in newEntry) {
+              if (oldEntry[property] !== newEntry[property]) {
+                model.set(path + '.' + newEntry.id + '.' + property, newEntry[property]);
+              }
+            }
+          }
+        }
+      }, true);
+
+      // when server modificaitons are made, update the local model
       model.on('all', path + '**', function () {
+
         // this $timeout is needed to avoid $$hashkey being added
         // to the op insert payload when new items are being created.
         $timeout(function() {

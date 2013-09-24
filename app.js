@@ -27,16 +27,30 @@ var store = racer.createStore({
   redis: redis
 });
 
+
+function createUserId(req, res, next) {
+  var model = req.getModel();
+  var userId = req.session.userId || (req.session.userId = model.id());
+  model.set('_session.userId', userId);
+  next();
+}
+
+app.use(express.favicon());
+// Gzip dynamically
+app.use(express.compress());
+
 app.use(express.static(__dirname + '/public'));
 app.use(require('racer-browserchannel')(store));
+// Add req.getModel() method ?
+app.use(store.modelMiddleware());
 app.use(express.bodyParser());
 
 app.get('/', function (req, res) {
   res.sendfile(__dirname + '/public/index.htm');
 });
 
-app.get('/model', function (req, res) {
-  var model = store.createModel();
+app.get('/racerInit', function (req, res) {
+  var model = store.createModel({fetchOnly: true}, req);
   model.bundle(function (err, bundle) {
     if (err) {
       res.status(500);
@@ -46,7 +60,6 @@ app.get('/model', function (req, res) {
     }
   });
 });
-
 
 store.bundle(__dirname + '/client.js', function (err, js) {
   app.get('/script.js', function (req, res) {
