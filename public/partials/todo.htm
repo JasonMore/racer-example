@@ -1,7 +1,7 @@
 <h1>ToDo {{name}}</h1>
 
 <ul>
-  <li data-ng-repeat="entry in entries">
+  <li data-ng-repeat="entry in entries | objectOrderByFilter:'done':true">
     <input type="checkbox" ng-model="entry.done">
     <input type="text" ng-model="entry.text">
     <button ng-click="delete(entry)">delete</button>

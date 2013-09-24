@@ -1,4 +1,4 @@
-angular.module('MyApp', ['racer.js']).
+var app = angular.module('MyApp', ['racer.js']).
   config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
     $locationProvider.html5Mode(true);
 
@@ -15,6 +15,15 @@ angular.module('MyApp', ['racer.js']).
       .otherwise({ redirectTo: '/' });
   }]);
 
+app.filter('objectOrderByFilter', function(orderByFilter){
+  return function(value, predicate, reverse){
+    if(_.isObject(value)){
+      value = _.values(value);
+    }
+
+    return orderByFilter(value, predicate, reverse);
+  };
+})
 
 function TodoCtrl($scope, liveResource, liveResourceProvider) {
 
