@@ -1,7 +1,7 @@
 var racerModule = angular.module('racer.js', []);
 
 racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
-  var pageScope = $rootScope.$new();
+  var liveScope = $rootScope.$new();
 
   var racer = require('racer');
 
@@ -41,7 +41,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
           // not sure why I have to do this
           query.ref('_page._' + path);
 
-          pageScope[path] = liveData;
+          liveScope[path] = liveData;
 
           $timeout(function() {
             angular.extend(liveData, model.get(path));
@@ -52,7 +52,7 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       };
 
       // when local modifications are made, update the server model
-      pageScope.$watch(path, function (newEntries, oldEntries) {
+      liveScope.$watch(path, function (newEntries, oldEntries) {
         if (!oldEntries || newEntries === oldEntries) return;
 
         // remove $$ from objects

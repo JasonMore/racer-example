@@ -15,9 +15,9 @@ var app = angular.module('MyApp', ['racer.js']).
       .otherwise({ redirectTo: '/' });
   }]);
 
-app.filter('objectOrderByFilter', function(orderByFilter){
-  return function(value, predicate, reverse){
-    if(_.isObject(value)){
+app.filter('objectOrderByFilter', function (orderByFilter) {
+  return function (value, predicate, reverse) {
+    if (_.isObject(value)) {
       value = _.values(value);
     }
 
@@ -33,11 +33,11 @@ function TodoCtrl($scope, liveResource) {
   var allTemplatesQuery = entriesLive.query({});
   $scope.entries = entriesLive.subscribe(allTemplatesQuery);
 
-  $scope.add = function() {
+  $scope.add = function () {
     entriesLive.add({ text: $scope.newInput, done: false });
   };
 
-  $scope.delete = function(entry){
+  $scope.delete = function (entry) {
     entriesLive.delete(entry);
   };
 }
