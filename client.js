@@ -1,6 +1,9 @@
-var racerModule = angular.module('racer.js', []);
+var liveResourceModule = angular.module('liveResource', []);
 
-racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
+module.exports = liveResourceModule;
+
+
+liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
   var liveScope = $rootScope.$new();
 
   var racer = require('racer');
@@ -126,8 +129,14 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
         $timeout(function () {
           var newServerModel = racerModel.get(path);
 
+          // model was deleted
+//          if(!newServerModel){
+//            //TODO: some kind of clean up here when model is deleted?
+//            return;
+//          }
+
           // if a collection, remove deleted data
-          if (!newServerModel.id) {
+          if (!newServerModel || !newServerModel.id) {
             var keysRemoved = _.difference(_.keys(liveData), _.keys(newServerModel));
 
             _.each(keysRemoved, function (key) {

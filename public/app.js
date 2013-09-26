@@ -1,4 +1,4 @@
-var app = angular.module('MyApp', ['racer.js']);
+var app = angular.module('MyApp', ['liveResource']);
 
 app.config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
 
