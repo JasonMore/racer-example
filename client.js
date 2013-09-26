@@ -13,38 +13,53 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
     racer.init(data);
   });
 
-  racer.ready(function (model) {
+  racer.ready(function (racerModel) {
 
-    window.debugModel = model;
+    window.debugRacerModel = racerModel;
 
     // currently singleton, refactor to factory
     var returnService = function liveResource(path) {
-      this._model = model;
+      this._racerModel = racerModel;
       var liveData = {};
 
       // racer functions
-      this.add = function (value) {
-        value = angular.copy(value);
-        return model.add(path, value);
+      this.add = function (newModel) {
+        newModel = angular.copy(newModel);
+        return racerModel.add(path, newModel);
+      };
+
+      this.at = function () {
+        return racerModel.at(path);
       };
 
       this.query = function (queryParams) {
-        return model.query(path, queryParams);
+        return racerModel.query(path, queryParams);
       };
 
-      this.delete = function(obj){
-        return model.del(path + "." + obj.id);
+      this.delete = function (model) {
+        if (_.contains(path, model.id)) {
+          return racerModel.del(path);
+        }
+
+        return racerModel.del(path + "." + model.id);
       };
 
-      this.subscribe = function (query) {
-        model.subscribe(query, function () {
+      this.subscribe = function (queryOrScope) {
+        if (!queryOrScope) {
+          queryOrScope = racerModel.at(path);
+        }
+
+        racerModel.subscribe(queryOrScope, function () {
+
           // not sure why I have to do this
-          query.ref('_page._' + path);
+          if (queryOrScope.constructor.name === 'Query') {
+            queryOrScope.ref('_page._' + path);
+          }
 
           liveScope[path] = liveData;
 
-          $timeout(function() {
-            angular.extend(liveData, model.get(path));
+          $timeout(function () {
+            angular.extend(liveData, racerModel.get(path));
           });
         });
 
@@ -52,52 +67,77 @@ racerModule.service('liveResourceProvider', function ($q, $http, $timeout, $root
       };
 
       // when local modifications are made, update the server model
-      liveScope.$watch(path, function (newEntries, oldEntries) {
-        if (!oldEntries || newEntries === oldEntries) return;
+      liveScope.$watch(function () {
+        return liveScope[path];
+      }, function (newModels, oldModels) {
+        if (!oldModels || _.isEmpty(oldModels) || newModels === oldModels) {
+          return;
+        }
 
         // remove $$ from objects
-        newEntries = angular.copy(newEntries);
-        oldEntries = angular.copy(oldEntries);
+        newModels = angular.copy(newModels);
+        oldModels = angular.copy(oldModels);
 
-        for (var entry in newEntries) {
+        // are we actually at a model?
+        if (newModels.id) {
+          updateModel(newModels, oldModels);
+          return;
+        }
 
-          if (entry === "undefined") {
-            break;
+        for (var modelKey in newModels) {
+          if (modelKey === "undefined") {
+            continue;
           }
 
-          var newEntry = newEntries[entry];
-          var oldEntry = oldEntries[entry];
-
-          var newEntryJson = JSON.stringify(newEntry);
-          var oldEntryJson = JSON.stringify(oldEntry);
-
-          if (oldEntryJson && newEntryJson !== oldEntryJson) {
-            for (var property in newEntry) {
-              if (oldEntry[property] !== newEntry[property]) {
-                model.set(path + '.' + newEntry.id + '.' + property, newEntry[property]);
-              }
-            }
-          }
+          updateModel(newModels[modelKey], oldModels[modelKey]);
         }
       }, true);
 
+      function updateModel(newModel, oldModel) {
+        var newModelJson = JSON.stringify(newModel);
+        var oldModelJson = JSON.stringify(oldModel);
+
+        if (!oldModelJson || (newModelJson === oldModelJson)) {
+          return;
+        }
+
+        for (var propertyKey in newModel) {
+          if (oldModel[propertyKey] === newModel[propertyKey]) {
+            continue;
+          }
+
+          var setPath = path;
+
+          if (!_.contains(path, newModel.id)) {
+            setPath += '.' + newModel.id;
+          }
+
+          setPath += '.' + propertyKey;
+
+          racerModel.set(setPath, newModel[propertyKey]);
+        }
+      }
+
       // when server modificaitons are made, update the local model
-      model.on('all', path + '**', function () {
+      racerModel.on('all', path + '**', function () {
 
         // this $timeout is needed to avoid $$hashkey being added
         // to the op insert payload when new items are being created.
-        $timeout(function() {
-          var newData = model.get(path);
-          var keysRemoved = _.difference(_.keys(liveData), _.keys(newData));
+        $timeout(function () {
+          var newServerModel = racerModel.get(path);
 
-          _.each(keysRemoved, function (key) {
-            delete liveData[key];
-          });
+          // if a collection, remove deleted data
+          if (!newServerModel.id) {
+            var keysRemoved = _.difference(_.keys(liveData), _.keys(newServerModel));
 
-          angular.extend(liveData, newData);
+            _.each(keysRemoved, function (key) {
+              delete liveData[key];
+            });
+          }
+
+          angular.extend(liveData, newServerModel);
         });
       });
-
     };
 
     $timeout(function () {

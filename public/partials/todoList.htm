@@ -1,0 +1,21 @@
+<h1>ToDo {{name}}</h1>
+
+<ul>
+  <li data-ng-repeat="todo in todos | objectOrderByFilter:'done':true">
+    <input type="checkbox" ng-model="todo.done">
+    <input type="text" ng-model="todo.text">
+    <a ng-href="#/todo/{{todo.id}}">Edit</a>
+    <button ng-click="delete(todo)">delete</button>
+  </li>
+</ul>
+
+Add new entry:
+<form data-ng-submit="add()">
+  <dl>
+    <dt>Text:</dt>
+    <dd>
+      <input ng-model="newInput" type="text"></dd>
+    <dd>
+      <input type="submit"></dd>
+  </dl>
+</form>
