@@ -2,7 +2,6 @@ var liveResourceModule = angular.module('liveResource', []);
 
 module.exports = liveResourceModule;
 
-
 liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout, $rootScope) {
   var liveScope = $rootScope.$new();
 
@@ -128,12 +127,6 @@ liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout
         // to the op insert payload when new items are being created.
         $timeout(function () {
           var newServerModel = racerModel.get(path);
-
-          // model was deleted
-//          if(!newServerModel){
-//            //TODO: some kind of clean up here when model is deleted?
-//            return;
-//          }
 
           // if a collection, remove deleted data
           if (!newServerModel || !newServerModel.id) {
