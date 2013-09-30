@@ -70,15 +70,19 @@ liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout
 
       // when local modifications are made, update the server model
       liveScope.$watch(function () {
-        return liveScope[path];
+        return JSON.stringify(liveScope[path]);
       }, function (newModels, oldModels) {
-        if (!oldModels || _.isEmpty(oldModels) || newModels === oldModels) {
+        if (!oldModels || newModels === oldModels) {
           return;
         }
 
         // remove $$ from objects
-        newModels = angular.copy(newModels);
-        oldModels = angular.copy(oldModels);
+        newModels = angular.copy(JSON.parse(newModels));
+        oldModels = angular.copy(JSON.parse(oldModels));
+
+        if (_.isEmpty(oldModels)) {
+          return;
+        }
 
         // are we actually at a model?
         if (newModels.id) {
@@ -95,33 +99,68 @@ liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout
         }
       }, true);
 
-      function updateModel(newModel, oldModel) {
+      function updateModel(newModel, oldModel, childPath) {
+        if (!childPath) {
+          childPath = path;
+        }
+
         var newModelJson = JSON.stringify(newModel);
         var oldModelJson = JSON.stringify(oldModel);
 
-        if (!oldModelJson || (newModelJson === oldModelJson)) {
+//        if (!oldModelJson || (newModelJson === oldModelJson)) {
+        if ((newModelJson === oldModelJson)) {
+          return;
+        }
+
+        if(!oldModel){
+          racerModel.set(childPath, newModel);
           return;
         }
 
         for (var propertyKey in newModel) {
-          if (oldModel[propertyKey] === newModel[propertyKey]) {
+          if (oldModel && oldModel[propertyKey] && oldModel[propertyKey] === newModel[propertyKey]) {
             continue;
           }
 
-          var setPath = path;
+          var setPath = childPath;
 
-          if (!_.contains(path, newModel.id)) {
+          // real code
+//          if (!_.contains(childPath, newModel.id)) {
+//            setPath += '.' + newModel.id;
+//          }
+
+          // hack
+          if (!newModel.path && !_.contains(childPath, newModel.id)) {
             setPath += '.' + newModel.id;
           }
 
           setPath += '.' + propertyKey;
 
+          if (_.isArray(newModel[propertyKey])) {
+            updateArrayModel(newModel[propertyKey], oldModel ? oldModel[propertyKey] : null, setPath);
+            return;
+          }
+
+          if (_.isObject(newModel[propertyKey])) {
+            updateModel(newModel[propertyKey], oldModel ? oldModel[propertyKey] : null, setPath);
+            return;
+          }
+
           racerModel.set(setPath, newModel[propertyKey]);
         }
       }
 
+      function updateArrayModel(newModelArray, oldModelArray, childPath) {
+        for (i = 0; i < newModelArray.length; i++) {
+
+          updateModel(newModelArray[i], oldModelArray[i], childPath + "." + i);
+
+
+        }
+      }
+
       // when server modificaitons are made, update the local model
-      racerModel.on('all', path + '**', function () {
+      racerModel.on('all', path + '**', function (property, type, newVal, oldVal, passed) {
 
         // this $timeout is needed to avoid $$hashkey being added
         // to the op insert payload when new items are being created.
