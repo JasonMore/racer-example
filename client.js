@@ -61,7 +61,7 @@ liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout
           liveScope[path] = liveData;
 
           $timeout(function () {
-            angular.extend(liveData, racerModel.get(path));
+            angular.extend(liveData, angular.copy(racerModel.get(path)));
           });
         });
 
@@ -165,7 +165,7 @@ liveResourceModule.service('liveResourceProvider', function ($q, $http, $timeout
         // this $timeout is needed to avoid $$hashkey being added
         // to the op insert payload when new items are being created.
         $timeout(function () {
-          var newServerModel = racerModel.get(path);
+          var newServerModel = angular.copy(racerModel.get(path));
 
           // if a collection, remove deleted data
           if (!newServerModel || !newServerModel.id) {
