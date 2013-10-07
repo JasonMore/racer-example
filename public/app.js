@@ -49,10 +49,47 @@ function TodoListCtrl($scope, liveResource) {
   $scope.delete = function (todo) {
     todosLive.delete(todo);
   };
+
 }
 
-function TodoCtrl($scope, $routeParams, liveResource) {
+function TodoCtrl($scope, $routeParams, liveResource, $timeout) {
   window.debugScope = $scope;
   var todoLive = liveResource('todo.' + $routeParams.id);
+
+  debugRacerModel.fn('nameDone', function(todo){
+    debugger;
+//    var doneText = todo.done ? 'Yarp!' : 'No :-('
+//    return todo.name + doneText;
+  });
+
+//  $scope.todoOnce = todoLive.get();
+
   $scope.todo = todoLive.subscribe();
+
+
+//  $scope.nameDoneText = todoLive.evaluate('nameDone');
+
+  var todo = debugRacerModel.at('todo.' + $routeParams.id);
+  debugRacerModel.subscribe(todo, function() {
+    $timeout(function() {
+      debugger;
+      console.log(debugRacerModel.get('todo.' + $routeParams.id))
+    })
+  });
+
+
+  if (!$scope.todo.tags) {
+    $scope.todo.tags = [];
+  }
+
+  $scope.addTag = function () {
+    $scope.todo.tags.push($scope.newTag);
+    $scope.newTag = '';
+  }
+
+  $scope.deleteTag = function (tagToDelete) {
+    _.remove($scope.todo.tags, function (tag) {
+      return tag === tagToDelete;
+    });
+  }
 }
